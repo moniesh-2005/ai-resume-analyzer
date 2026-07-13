@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ATS Dashboard - ResumeAI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>📄</text></svg>">
+</head>
+<body class="dashboard" {% if user.dark_mode %}data-theme="dark"{% endif %}>
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+    </div>
+    
+    <div class="toast-container" id="toastContainer"></div>
+    
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="flash-message" data-type="{{ category }}">{{ message }}</div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+    <aside class="sidebar" id="sidebar">
+        <div class="sidebar-logo">
+            <a href="{{ url_for('index') }}" style="text-decoration: none;">
+                <h1 class="gradient-text">ResumeAI</h1>
+            </a>
+        </div>
+        
+        <nav class="sidebar-nav">
+            <a href="{{ url_for('dashboard') }}" class="sidebar-link">
+                <i data-lucide="layout-dashboard" class="icon"></i> Dashboard
+            </a>
+            <a href="{{ url_for('history') }}" class="sidebar-link">
+                <i data-lucide="history" class="icon"></i> History
+            </a>
+            <a href="{{ url_for('cover_letter') }}" class="sidebar-link">
+                <i data-lucide="file-text" class="icon"></i> Cover Letters
+            </a>
+            <a href="{{ url_for('career_roadmap') }}" class="sidebar-link">
+                <i data-lucide="map" class="icon"></i> Career Roadmap
+            </a>
+            <a href="{{ url_for('interview_prep') }}" class="sidebar-link">
+                <i data-lucide="mic" class="icon"></i> Interview Prep
+            </a>
+            <a href="{{ url_for('profile') }}" class="sidebar-link">
+                <i data-lucide="user" class="icon"></i> Profile
+            </a>
+            <a href="{{ url_for('logout') }}" class="sidebar-link mt-4" style="color: var(--danger);">
+                <i data-lucide="log-out" class="icon"></i> Logout
+            </a>
+        </nav>
+        
+        <div style="margin-top: auto; padding-top: 1rem; border-top: 1px solid var(--border-color);">
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                {% if user.profile_picture_url %}
+                <img src="{{ user.profile_picture_url }}" alt="Profile" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover;">
+                {% else %}
+                <div style="width: 40px; height: 40px; border-radius: 50%; background: var(--accent-gradient); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold;">
+                    {{ user.full_name[:1] if user.full_name else user.username[:1] | upper }}
+                </div>
+                {% endif %}
+                <div>
+                    <div style="font-weight: 600; font-size: 0.875rem;">{{ user.full_name or user.username }}</div>
+                    <div style="font-size: 0.75rem; color: var(--text-tertiary);">{{ user.plan | title }} Plan</div>
+                </div>
+            </div>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <header class="page-header">
+            <div>
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <button id="sidebarToggle" class="btn btn-icon" style="display: none;"><i data-lucide="menu"></i></button>
+                    <a href="{{ url_for('dashboard') }}" class="btn btn-icon" style="background: var(--bg-secondary);"><i data-lucide="arrow-left"></i></a>
+                    <h1 class="page-title">ATS Recruiter Dashboard</h1>
+                </div>
+                <p class="text-secondary">Enterprise analysis for {{ resume.filename }}</p>
+            </div>
+            <div style="display: flex; gap: 1rem;">
+                <a href="{{ url_for('download_report', resume_id=resume.id) }}" class="btn btn-primary" target="_blank">
+                    <i data-lucide="download" style="width: 18px; height: 18px; margin-right: 8px;"></i> Export PDF
+                </a>
+                <button class="theme-toggle btn btn-icon" aria-label="Toggle theme">
+                    <i data-lucide="moon" class="moon-icon"></i>
+                </button>
+            </div>
+        </header>
+
+        {% if not detailed_analysis %}
+        <!-- Fallback for older resumes without detailed_analysis -->
+        <div class="glass-card mb-4 text-center">
+            <h3 class="font-bold text-accent">Analysis Complete</h3>
+            <p class="text-secondary mt-2">This is an older resume analysis. To see the new Advanced ATS Dashboard, please re-upload your resume.</p>
+        </div>
+        {% else %}
+
+        <!-- TOP SUMMARY SECTION (4 CARDS) -->
+        <div class="dashboard-grid">
+            <div class="dash-card">
+                <div class="dash-card-header">
+                    <span>ATS SCORE</span>
+                    <i data-lucide="target" style="color: var(--accent-primary);"></i>
+                </div>
+                <div>
+                    <div class="dash-card-value">{{ detailed_analysis.scores.ats }}<span style="font-size: 1rem; color: var(--text-tertiary);">/100</span></div>
+                    <div class="dash-card-sub">Overall compatibility</div>
+                </div>
+                <div class="progress-bar-container mt-3">
+                    <div class="progress-bar-fill" style="width: {{ detailed_analysis.scores.ats }}%;"></div>
+                </div>
+            </div>
+            
+            <div class="dash-card">
+                <div class="dash-card-header">
+                    <span>JOB MATCH</span>
+                    <i data-lucide="briefcase" style="color: var(--info);"></i>
+                </div>
+                <div>
+                    <div class="dash-card-value">{{ detailed_analysis.scores.match }}<span style="font-size: 1rem; color: var(--text-tertiary);">%</span></div>
+                    <div class="dash-card-sub">Alignment with requirements</div>
+                </div>
+                <div class="progress-bar-container mt-3">
+                    <div class="progress-bar-fill" style="width: {{ detailed_analysis.scores.match }}%; background: var(--info);"></div>
+                </div>
+            </div>
+
+            <div class="dash-card">
+                <div class="dash-card-header">
+                    <span>QUALITY SCORE</span>
+                    <i data-lucide="award" style="color: var(--warning);"></i>
+                </div>
+                <div>
+                    <div class="dash-card-value">{{ detailed_analysis.scores.quality }}<span style="font-size: 1rem; color: var(--text-tertiary);">/100</span></div>
+                    <div class="dash-card-sub">Content density and impact</div>
+                </div>
+                <div class="progress-bar-container mt-3">
+                    <div class="progress-bar-fill" style="width: {{ detailed_analysis.scores.quality }}%; background: var(--warning);"></div>
+                </div>
+            </div>
+
+            <div class="dash-card">
+                <div class="dash-card-header">
+                    <span>RECRUITER VERDICT</span>
+                    <i data-lucide="check-circle" style="color: var(--success);"></i>
+                </div>
+                <div>
+                    <div class="dash-card-value" style="font-size: 1.5rem; margin-bottom: 0.5rem; color: {% if detailed_analysis.scores.ats >= 80 %}var(--success){% elif detailed_analysis.scores.ats >= 60 %}var(--warning){% else %}var(--danger){% endif %};">
+                        {{ detailed_analysis.recruiter_insights.verdict }}
+                    </div>
+                    <div class="dash-card-sub">Est. Interview Probability: <strong>{{ detailed_analysis.recruiter_insights.interview_probability }}%</strong></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="dashboard-layout mb-4">
+            <!-- Main Content Area -->
+            <div style="display: flex; flex-direction: column; gap: 2rem;">
+                
+                <!-- KEYWORD & SKILLS ANALYSIS -->
+                <section class="glass-card">
+                    <h3 class="font-bold mb-4" style="display: flex; align-items: center; gap: 0.5rem;">
+                        <i data-lucide="tags" style="color: var(--accent-primary);"></i> Keyword & Skill Analysis
+                    </h3>
+                    
+                    {% for category, data in detailed_analysis.categorized_skills.items() %}
+                    <div class="mb-4">
+                        <div class="flex-between mb-2">
+                            <h4 class="font-bold text-sm">{{ category }}</h4>
+                            <span class="text-sm font-bold">{{ data.score }}% Match</span>
+                        </div>
+                        <div class="progress-bar-container mb-3" style="height: 4px;">
+                            <div class="progress-bar-fill" style="width: {{ data.score }}%; background: {% if data.score >= 70 %}var(--success){% elif data.score >= 40 %}var(--warning){% else %}var(--danger){% endif %};"></div>
+                        </div>
+                        <div class="skills-chips">
+                            {% for skill in data.matched %}
+                                <span class="chip chip-green"><i data-lucide="check" style="width:12px; height:12px; margin-right:4px;"></i> {{ skill|title }}</span>
+                            {% endfor %}
+                            {% for skill in data.missing %}
+                                <span class="chip chip-red"><i data-lucide="x" style="width:12px; height:12px; margin-right:4px;"></i> {{ skill|title }}</span>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                    
+                    {% if not detailed_analysis.categorized_skills %}
+                        <p class="text-secondary text-sm">No specific category skills detected for this profile.</p>
+                    {% endif %}
+                </section>
+
+                <!-- SECTION ANALYSIS -->
+                <section class="glass-card">
+                    <h3 class="font-bold mb-4" style="display: flex; align-items: center; gap: 0.5rem;">
+                        <i data-lucide="layout-list" style="color: var(--info);"></i> Resume Sections
+                    </h3>
+                    
+                    <div class="accordion adv-accordion">
+                        {% for section in detailed_analysis.section_analysis %}
+                        <div class="accordion-item">
+                            <div class="accordion-header" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                                <div style="display: flex; align-items: center; gap: 1rem;">
+                                    <span style="font-weight: 600;">{{ section.section }}</span>
+                                    {% if section.status == 'Excellent' %}
+                                        <span class="badge badge-success" style="font-size: 0.7rem;">{{ section.status }}</span>
+                                    {% elif section.status == 'Optional' %}
+                                        <span class="badge" style="background: var(--bg-tertiary); font-size: 0.7rem;">{{ section.status }}</span>
+                                    {% else %}
+                                        <span class="badge badge-danger" style="font-size: 0.7rem;">{{ section.status }}</span>
+                                    {% endif %}
+                                </div>
+                                <i data-lucide="chevron-down" class="icon" style="transition: transform 0.3s;"></i>
+                            </div>
+                            <div class="accordion-body">
+                                <ul style="margin: 0; padding-left: 1rem; color: var(--text-secondary); font-size: 0.875rem;">
+                                    {% for sugg in section.suggestions %}
+                                        <li>{{ sugg }}</li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </section>
+
+                <!-- AI IMPROVEMENTS -->
+                <section class="glass-card">
+                    <h3 class="font-bold mb-4" style="display: flex; align-items: center; gap: 0.5rem;">
+                        <i data-lucide="sparkles" style="color: var(--warning);"></i> AI Content Rewriter
+                    </h3>
+                    <p class="text-secondary text-sm mb-4">We found some bullet points that could be phrased more powerfully for a recruiter's eye:</p>
+                    
+                    {% for rewrite in detailed_analysis.ai_improvements %}
+                    <div class="rewrite-box">
+                        <div class="rewrite-original">"{{ rewrite.original }}"</div>
+                        <i data-lucide="arrow-right" style="color: var(--accent-primary);"></i>
+                        <div class="rewrite-improved">"{{ rewrite.improved }}"</div>
+                    </div>
+                    {% endfor %}
+                    
+                    {% if not detailed_analysis.ai_improvements %}
+                        <p class="text-success text-sm font-bold"><i data-lucide="check-circle" style="display:inline; width:16px;"></i> Your action verbs and bullet phrasing look solid!</p>
+                    {% endif %}
+                </section>
+
+                <!-- ATS FORMAT ANALYSIS -->
+                <section class="glass-card">
+                    <h3 class="font-bold mb-4" style="display: flex; align-items: center; gap: 0.5rem;">
+                        <i data-lucide="file-check-2" style="color: var(--accent-secondary);"></i> ATS Format Check
+                    </h3>
+                    <div style="display: flex; flex-direction: column; gap: 1rem;">
+                        {% for issue in detailed_analysis.format_issues %}
+                        <div style="padding: 1rem; border-radius: var(--radius-md); border-left: 4px solid {% if issue.type == 'high' %}var(--danger){% elif issue.type == 'medium' %}var(--warning){% else %}var(--success){% endif %}; background: var(--bg-secondary);">
+                            <div class="font-bold mb-1" style="color: var(--text-primary);">{{ issue.issue }}</div>
+                            <div class="text-secondary text-sm">{{ issue.desc }}</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </section>
+                
+            </div>
+
+            <!-- Right Column Sidebar (Charts & Insights) -->
+            <div style="display: flex; flex-direction: column; gap: 2rem;">
+                
+                <!-- RECRUITER INSIGHTS -->
+                <section class="glass-card">
+                    <h3 class="font-bold mb-4">Recruiter Insights</h3>
+                    
+                    <div class="mb-4">
+                        <h4 class="font-bold text-sm text-success mb-2"><i data-lucide="thumbs-up" style="display:inline; width:14px; margin-right:4px;"></i> Key Strengths</h4>
+                        <ul style="padding-left: 1.2rem; margin:0; font-size: 0.85rem; color: var(--text-secondary);">
+                            {% for strength in detailed_analysis.recruiter_insights.strengths %}
+                                <li>{{ strength }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                    
+                    <div>
+                        <h4 class="font-bold text-sm text-danger mb-2"><i data-lucide="alert-triangle" style="display:inline; width:14px; margin-right:4px;"></i> Primary Concerns</h4>
+                        <ul style="padding-left: 1.2rem; margin:0; font-size: 0.85rem; color: var(--text-secondary);">
+                            {% for concern in detailed_analysis.recruiter_insights.concerns %}
+                                <li>{{ concern }}</li>
+                            {% endfor %}
+                        </ul>
+                    </div>
+                </section>
+
+                <!-- RADAR CHART -->
+                <section class="glass-card">
+                    <h3 class="font-bold mb-4 text-center">Competency Radar</h3>
+                    <div style="position: relative; height: 250px; width: 100%;">
+                        <canvas id="competencyRadar"></canvas>
+                    </div>
+                </section>
+
+                <!-- PIE CHART -->
+                <section class="glass-card">
+                    <h3 class="font-bold mb-4 text-center">Keyword Match</h3>
+                    <div style="position: relative; height: 200px; width: 100%;">
+                        <canvas id="keywordPie" data-matched="{{ matched_skills|length }}" data-missing="{{ missing_skills|length }}"></canvas>
+                    </div>
+                </section>
+                
+                <!-- JOB RECOMMENDATIONS -->
+                <section class="glass-card">
+                    <h3 class="font-bold mb-4">Role Recommendations</h3>
+                    <div style="display: flex; flex-direction: column; gap: 1rem;">
+                        {% for job in job_recommendations[:2] %}
+                        <div class="job-card" style="padding: 1rem; border-radius: var(--radius-md); background: var(--bg-secondary); border: 1px solid var(--border-color);">
+                            <div class="flex-between mb-2">
+                                <div class="font-bold text-sm">{{ job.title }}</div>
+                                <span class="badge {% if job.match_percentage >= 80 %}badge-success{% else %}badge-warning{% endif %}">{{ job.match_percentage }}%</span>
+                            </div>
+                            <div class="text-secondary" style="font-size: 0.75rem;">{{ job.description[:60] }}...</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </section>
+
+            </div>
+        </div>
+        {% endif %}
+    </main>
+
+    <!-- AI Chatbot Widget -->
+    <button class="chatbot-toggle" id="chatbotToggle" title="AI Assistant">
+        <i data-lucide="message-square"></i>
+    </button>
+    <div class="chatbot-panel" id="chatbotPanel">
+        <div class="chatbot-header">
+            <div>
+                <strong>AI Career Assistant</strong>
+                <small style="display:block;opacity:0.8">Online • Ready to help</small>
+            </div>
+            <button class="chatbot-close btn-icon" id="chatbotClose" style="color: white;"><i data-lucide="x"></i></button>
+        </div>
+        <div class="chatbot-messages" id="chatbotMessages">
+            <div class="chat-message bot">Hi! 👋 I see you just analyzed a resume. Need help understanding your advanced dashboard or generating a cover letter?</div>
+        </div>
+        <div class="chatbot-input">
+            <input type="text" id="chatbotInput" placeholder="Type your message...">
+            <button id="chatbotSend" class="btn btn-primary"><i data-lucide="send" style="width: 16px; height: 16px;"></i></button>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    <script>
+        lucide.createIcons();
+        
+        // Advanced Chart Integrations
+        document.addEventListener('DOMContentLoaded', () => {
+            {% if detailed_analysis %}
+            
+            // 1. Competency Radar Chart
+            const radarCtx = document.getElementById('competencyRadar');
+            if (radarCtx) {
+                new Chart(radarCtx, {
+                    type: 'radar',
+                    data: {
+                        labels: ['Overall ATS', 'Job Match', 'Quality', 'Completeness', 'Format'],
+                        datasets: [{
+                            label: 'Your Resume',
+                            data: [
+                                {{ detailed_analysis.scores.ats }}, 
+                                {{ detailed_analysis.scores.match }}, 
+                                {{ detailed_analysis.scores.quality }}, 
+                                {{ detailed_analysis.scores.completeness }}, 
+                                85 // Static format baseline
+                            ],
+                            backgroundColor: 'rgba(108, 99, 255, 0.2)',
+                            borderColor: '#6C63FF',
+                            pointBackgroundColor: '#00D2FF',
+                            pointBorderColor: '#fff',
+                            pointHoverBackgroundColor: '#fff',
+                            pointHoverBorderColor: '#6C63FF'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            r: {
+                                min: 0,
+                                max: 100,
+                                ticks: { display: false }
+                            }
+                        },
+                        plugins: { legend: { display: false } }
+                    }
+                });
+            }
+
+            // 2. Keyword Pie Chart
+            const pieCanvas = document.getElementById('keywordPie');
+            if (pieCanvas) {
+                const matched = parseInt(pieCanvas.dataset.matched) || 0;
+                const missing = parseInt(pieCanvas.dataset.missing) || 0;
+                
+                new Chart(pieCanvas, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Matched', 'Missing'],
+                        datasets: [{
+                            data: [matched, missing],
+                            backgroundColor: ['#10B981', '#EF4444'],
+                            borderWidth: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        cutout: '70%',
+                        plugins: {
+                            legend: { position: 'bottom' }
+                        }
+                    }
+                });
+            }
+            
+            {% endif %}
+        });
+    </script>
+</body>
+</html>

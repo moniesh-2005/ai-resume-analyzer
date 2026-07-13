@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Analyze your resume with AI, get ATS compatibility scores, skill matching, and personalized suggestions. Join 50,000+ professionals.">
+    <meta name="keywords" content="resume analyzer, ATS score, AI resume, career tools, job search, resume builder">
+    <meta name="author" content="ResumeAI">
+    <title>ResumeAI - AI-Powered Resume Analyzer | Land Your Dream Job</title>
+
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📄</text></svg>">
+
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+
+    <!-- App Stylesheet -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+    <!-- ======================== 1. LOADING OVERLAY ======================== -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- ======================== 13. FLASH MESSAGES ======================== -->
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="flash-message" data-type="{{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+
+    <!-- ======================== 2. TOAST CONTAINER ======================== -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- ======================== 3. NAVIGATION BAR ======================== -->
+    <nav class="navbar" id="navbar">
+        <div class="nav-container">
+            <a href="/" class="nav-logo">
+                <span class="gradient-text">ResumeAI</span>
+            </a>
+
+            <div class="nav-links" id="navLinks">
+                <a href="#features" class="nav-link">Features</a>
+                <a href="#pricing" class="nav-link">Pricing</a>
+                <a href="#testimonials" class="nav-link">Testimonials</a>
+                <a href="#faq" class="nav-link">FAQ</a>
+                <a href="#contact" class="nav-link">Contact</a>
+            </div>
+
+            <div class="nav-actions">
+                <button class="theme-toggle" id="themeToggle" title="Toggle Theme" aria-label="Toggle dark/light theme">
+                    🌙
+                </button>
+
+                {% if session.get('user_id') %}
+                    <a href="{{ url_for('dashboard') }}" class="btn btn-primary btn-sm">Dashboard</a>
+                {% else %}
+                    <a href="{{ url_for('login') }}" class="btn btn-secondary btn-sm">Login</a>
+                    <a href="{{ url_for('signup') }}" class="btn btn-primary btn-sm">Get Started</a>
+                {% endif %}
+            </div>
+
+            <button class="hamburger" id="hamburger" aria-label="Toggle navigation menu">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- ======================== 4. HERO SECTION ======================== -->
+    <section class="hero" id="hero">
+        <div class="hero-content">
+            <div class="hero-badge">🚀 AI-Powered Resume Analysis</div>
+
+            <h1 class="hero-title">
+                Land Your Dream Job with
+                <br>
+                <span class="gradient-text">AI-Powered Resume Analysis</span>
+            </h1>
+
+            <p class="hero-subtitle">
+                Get instant ATS compatibility scores, AI-powered suggestions, and personalized career guidance.
+                Join 50,000+ professionals who improved their resume.
+            </p>
+
+            <div class="hero-ctas">
+                {% if session.get('user_id') %}
+                    <a href="{{ url_for('dashboard') }}" class="btn btn-primary btn-lg">Analyze My Resume →</a>
+                {% else %}
+                    <a href="{{ url_for('signup') }}" class="btn btn-primary btn-lg">Analyze My Resume →</a>
+                {% endif %}
+                <a href="#demo" class="btn btn-secondary btn-lg">Watch Demo ▶</a>
+            </div>
+
+            <div class="hero-stats">
+                <div class="stat-item">
+                    <span class="stat-number">50K+</span>
+                    <span class="stat-label">Resumes Analyzed</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number">95%</span>
+                    <span class="stat-label">Success Rate</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number">500+</span>
+                    <span class="stat-label">Companies</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-number">4.9★</span>
+                    <span class="stat-label">Rating</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Floating gradient decorations -->
+        <div class="hero-decoration hero-decoration-1"></div>
+        <div class="hero-decoration hero-decoration-2"></div>
+        <div class="hero-decoration hero-decoration-3"></div>
+    </section>
+
+    <!-- ======================== 5. FEATURES SECTION ======================== -->
+    <section class="section" id="features">
+        <div class="container">
+            <div class="section-header reveal">
+                <h2 class="section-title">Powerful <span class="gradient-text">Features</span></h2>
+                <p class="section-subtitle">Everything you need to create the perfect resume and land your dream job.</p>
+            </div>
+
+            <div class="features-grid">
+                <div class="feature-card glass-card reveal">
+                    <div class="feature-icon">📊</div>
+                    <h3 class="feature-title">ATS Score Analysis</h3>
+                    <p class="feature-desc">Get instant compatibility scores using AI-powered analysis that matches your resume against job descriptions.</p>
+                </div>
+
+                <div class="feature-card glass-card reveal">
+                    <div class="feature-icon">🎯</div>
+                    <h3 class="feature-title">Smart Skill Matching</h3>
+                    <p class="feature-desc">Identify matched and missing skills with intelligent keyword extraction and industry-specific analysis.</p>
+                </div>
+
+                <div class="feature-card glass-card reveal">
+                    <div class="feature-icon">💡</div>
+                    <h3 class="feature-title">AI Suggestions</h3>
+                    <p class="feature-desc">Receive personalized, actionable suggestions to improve your resume content, format, and keywords.</p>
+                </div>
+
+                <div class="feature-card glass-card reveal">
+                    <div class="feature-icon">📝</div>
+                    <h3 class="feature-title">Cover Letter Generator</h3>
+                    <p class="feature-desc">Generate professional cover letters tailored to each job application with our AI writing assistant.</p>
+                </div>
+
+                <div class="feature-card glass-card reveal">
+                    <div class="feature-icon">🗺️</div>
+                    <h3 class="feature-title">Career Roadmap</h3>
+                    <p class="feature-desc">Get a personalized career development plan with skill recommendations and milestone tracking.</p>
+                </div>
+
+                <div class="feature-card glass-card reveal">
+                    <div class="feature-icon">🤖</div>
+                    <h3 class="feature-title">AI Career Assistant</h3>
+                    <p class="feature-desc">24/7 AI chatbot ready to answer your career questions, provide interview tips, and resume advice.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ======================== 6. HOW IT WORKS SECTION ======================== -->
+    <section class="section section-alt" id="how-it-works">
+        <div class="container">
+            <div class="section-header reveal">
+                <h2 class="section-title">How It <span class="gradient-text">Works</span></h2>
+                <p class="section-subtitle">Get your resume analyzed in three simple steps.</p>
+            </div>
+
+            <div class="steps-grid">
+                <div class="step-card glass-card reveal">
+                    <div class="step-number">01</div>
+                    <h3 class="step-title">Upload Resume</h3>
+                    <p class="step-desc">Upload your resume PDF and paste the job description you want to apply for.</p>
+                </div>
+
+                <div class="step-card glass-card reveal">
+                    <div class="step-number">02</div>
+                    <h3 class="step-title">AI Analysis</h3>
+                    <p class="step-desc">Our AI engine analyzes your resume against the job description for ATS compatibility.</p>
+                </div>
+
+                <div class="step-card glass-card reveal">
+                    <div class="step-number">03</div>
+                    <h3 class="step-title">Get Results</h3>
+                    <p class="step-desc">Receive detailed scores, suggestions, and a downloadable PDF report instantly.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ======================== 7. PRICING SECTION ======================== -->
+    <section class="section" id="pricing">
+        <div class="container">
+            <div class="section-header reveal">
+                <h2 class="section-title">Simple, Transparent <span class="gradient-text">Pricing</span></h2>
+                <p class="section-subtitle">Choose the plan that fits your career goals.</p>
+            </div>
+
+            <div class="pricing-grid">
+                <!-- Free Plan -->
+                <div class="pricing-card glass-card reveal">
+                    <div class="pricing-header">
+                        <h3 class="pricing-plan">Free</h3>
+                        <div class="pricing-price">
+                            <span class="price-currency">$</span>
+                            <span class="price-amount">0</span>
+                            <span class="price-period">/month</span>
+                        </div>
+                    </div>
+                    <ul class="pricing-features">
+                        <li><span class="check">✓</span> 5 Resume Analyses</li>
+                        <li><span class="check">✓</span> Basic ATS Score</li>
+                        <li><span class="check">✓</span> Skill Matching</li>
+                        <li><span class="check">✓</span> PDF Report Download</li>
+                        <li><span class="check">✓</span> Email Support</li>
+                    </ul>
+                    <a href="{{ url_for('signup') }}" class="btn btn-secondary btn-block">Get Started Free</a>
+                </div>
+
+                <!-- Pro Plan -->
+                <div class="pricing-card glass-card popular reveal">
+                    <div class="popular-badge">POPULAR</div>
+                    <div class="pricing-header">
+                        <h3 class="pricing-plan">Pro</h3>
+                        <div class="pricing-price">
+                            <span class="price-currency">$</span>
+                            <span class="price-amount">19</span>
+                            <span class="price-period">/month</span>
+                        </div>
+                    </div>
+                    <ul class="pricing-features">
+                        <li><span class="check">✓</span> Unlimited Analyses</li>
+                        <li><span class="check">✓</span> Advanced ATS Scoring</li>
+                        <li><span class="check">✓</span> AI Suggestions</li>
+                        <li><span class="check">✓</span> Cover Letter Generator</li>
+                        <li><span class="check">✓</span> Career Roadmap</li>
+                        <li><span class="check">✓</span> Priority Support</li>
+                        <li><span class="check">✓</span> Interview Prep</li>
+                    </ul>
+                    <a href="{{ url_for('signup') }}" class="btn btn-primary btn-block">Start Pro Trial</a>
+                </div>
+
+                <!-- Enterprise Plan -->
+                <div class="pricing-card glass-card reveal">
+                    <div class="pricing-header">
+                        <h3 class="pricing-plan">Enterprise</h3>
+                        <div class="pricing-price">
+                            <span class="price-currency">$</span>
+                            <span class="price-amount">49</span>
+                            <span class="price-period">/month</span>
+                        </div>
+                    </div>
+                    <ul class="pricing-features">
+                        <li><span class="check">✓</span> Everything in Pro</li>
+                        <li><span class="check">✓</span> Team Management</li>
+                        <li><span class="check">✓</span> Admin Dashboard</li>
+                        <li><span class="check">✓</span> Custom Integrations</li>
+                        <li><span class="check">✓</span> API Access</li>
+                        <li><span class="check">✓</span> Dedicated Manager</li>
+                        <li><span class="check">✓</span> 24/7 Phone Support</li>
+                    </ul>
+                    <a href="#contact" class="btn btn-secondary btn-block">Contact Sales</a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ======================== 8. TESTIMONIALS SECTION ======================== -->
+    <section class="section section-alt" id="testimonials">
+        <div class="container">
+            <div class="section-header reveal">
+                <h2 class="section-title">Loved by <span class="gradient-text">Professionals</span></h2>
+                <p class="section-subtitle">See what our users have to say about ResumeAI.</p>
+            </div>
+
+            <div class="testimonials-wrapper reveal">
+                <div class="testimonials-track" id="testimonialsTrack">
+                    <!-- Testimonial 1 -->
+                    <div class="testimonial-card glass-card">
+                        <div class="testimonial-stars">★★★★★</div>
+                        <p class="testimonial-text">"ResumeAI helped me optimize my resume and land my dream job at Google. The ATS score feature is incredibly accurate!"</p>
+                        <div class="testimonial-author">
+                            <div class="testimonial-avatar">SC</div>
+                            <div class="testimonial-info">
+                                <strong class="testimonial-name">Sarah Chen</strong>
+                                <span class="testimonial-role">Software Engineer at Google</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Testimonial 2 -->
+                    <div class="testimonial-card glass-card">
+                        <div class="testimonial-stars">★★★★★</div>
+                        <p class="testimonial-text">"The AI suggestions were spot-on. I improved my resume score from 45% to 92% in just one session."</p>
+                        <div class="testimonial-author">
+                            <div class="testimonial-avatar">MJ</div>
+                            <div class="testimonial-info">
+                                <strong class="testimonial-name">Marcus Johnson</strong>
+                                <span class="testimonial-role">Product Manager at Meta</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Testimonial 3 -->
+                    <div class="testimonial-card glass-card">
+                        <div class="testimonial-stars">★★★★★</div>
+                        <p class="testimonial-text">"Best resume tool I've ever used. The career roadmap feature gave me clear direction for my career growth."</p>
+                        <div class="testimonial-author">
+                            <div class="testimonial-avatar">ER</div>
+                            <div class="testimonial-info">
+                                <strong class="testimonial-name">Emily Rodriguez</strong>
+                                <span class="testimonial-role">Data Scientist at Amazon</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Testimonial 4 -->
+                    <div class="testimonial-card glass-card">
+                        <div class="testimonial-stars">★★★★★</div>
+                        <p class="testimonial-text">"The cover letter generator saved me hours of work. Each letter is perfectly tailored to the job."</p>
+                        <div class="testimonial-author">
+                            <div class="testimonial-avatar">DK</div>
+                            <div class="testimonial-info">
+                                <strong class="testimonial-name">David Kim</strong>
+                                <span class="testimonial-role">UX Designer at Apple</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Testimonial 5 -->
+                    <div class="testimonial-card glass-card">
+                        <div class="testimonial-stars">★★★★★</div>
+                        <p class="testimonial-text">"The interview prep feature helped me ace my technical interviews. Highly recommend for any job seeker!"</p>
+                        <div class="testimonial-author">
+                            <div class="testimonial-avatar">PP</div>
+                            <div class="testimonial-info">
+                                <strong class="testimonial-name">Priya Patel</strong>
+                                <span class="testimonial-role">ML Engineer at Microsoft</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ======================== 9. FAQ SECTION ======================== -->
+    <section class="section" id="faq">
+        <div class="container">
+            <div class="section-header reveal">
+                <h2 class="section-title">Frequently Asked <span class="gradient-text">Questions</span></h2>
+                <p class="section-subtitle">Got questions? We've got answers.</p>
+            </div>
+
+            <div class="faq-list reveal">
+                <div class="faq-item">
+                    <button class="faq-question" aria-expanded="false">
+                        <span>What is an ATS score?</span>
+                        <span class="faq-chevron">▼</span>
+                    </button>
+                    <div class="faq-answer">
+                        <p>An ATS (Applicant Tracking System) score measures how well your resume matches a job description. Our AI analyzes keywords, skills, and formatting to give you a compatibility percentage. Most companies use ATS to filter resumes before human review.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <button class="faq-question" aria-expanded="false">
+                        <span>How accurate is the AI analysis?</span>
+                        <span class="faq-chevron">▼</span>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Our AI uses advanced TF-IDF and NLP algorithms similar to those used by actual ATS systems. The analysis achieves 95%+ accuracy in identifying relevant keywords and skills.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <button class="faq-question" aria-expanded="false">
+                        <span>What file formats are supported?</span>
+                        <span class="faq-chevron">▼</span>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Currently, we support PDF resume uploads. PDF is the most widely accepted format by ATS systems and preserves your formatting perfectly.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <button class="faq-question" aria-expanded="false">
+                        <span>Is my resume data secure?</span>
+                        <span class="faq-chevron">▼</span>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Absolutely. All uploads are encrypted and stored securely. We never share your data with third parties. You can delete your data at any time from your profile.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <button class="faq-question" aria-expanded="false">
+                        <span>Can I use it for multiple job applications?</span>
+                        <span class="faq-chevron">▼</span>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Yes! You can analyze your resume against different job descriptions as many times as your plan allows. Each analysis is saved to your history for future reference.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <button class="faq-question" aria-expanded="false">
+                        <span>Do you offer refunds?</span>
+                        <span class="faq-chevron">▼</span>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Yes, we offer a 30-day money-back guarantee on all paid plans. If you're not satisfied, contact us for a full refund.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ======================== 10. CONTACT SECTION ======================== -->
+    <section class="section section-alt" id="contact">
+        <div class="container">
+            <div class="section-header reveal">
+                <h2 class="section-title">Get In <span class="gradient-text">Touch</span></h2>
+                <p class="section-subtitle">Have a question or want to learn more? We'd love to hear from you.</p>
+            </div>
+
+            <div class="contact-grid reveal">
+                <!-- Contact Form -->
+                <div class="contact-form-wrapper glass-card">
+                    <form action="#" method="POST" class="contact-form" id="contactForm">
+                        <div class="form-group">
+                            <label for="contactName">Name</label>
+                            <input type="text" id="contactName" name="name" placeholder="Your full name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="contactEmail">Email</label>
+                            <input type="email" id="contactEmail" name="email" placeholder="you@example.com" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="contactSubject">Subject</label>
+                            <input type="text" id="contactSubject" name="subject" placeholder="How can we help?">
+                        </div>
+                        <div class="form-group">
+                            <label for="contactMessage">Message</label>
+                            <textarea id="contactMessage" name="message" rows="5" placeholder="Tell us more about your inquiry..." required></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary btn-block">Send Message</button>
+                    </form>
+                </div>
+
+                <!-- Contact Info -->
+                <div class="contact-info glass-card">
+                    <div class="contact-info-item">
+                        <div class="contact-info-icon">📧</div>
+                        <div>
+                            <h4>Email</h4>
+                            <a href="mailto:hello@resumeai.com">hello@resumeai.com</a>
+                        </div>
+                    </div>
+                    <div class="contact-info-item">
+                        <div class="contact-info-icon">📞</div>
+                        <div>
+                            <h4>Phone</h4>
+                            <a href="tel:+15551234567">+1 (555) 123-4567</a>
+                        </div>
+                    </div>
+                    <div class="contact-info-item">
+                        <div class="contact-info-icon">📍</div>
+                        <div>
+                            <h4>Address</h4>
+                            <p>123 AI Street, San Francisco, CA 94105</p>
+                        </div>
+                    </div>
+                    <div class="contact-socials">
+                        <h4>Follow Us</h4>
+                        <div class="social-links">
+                            <a href="#" class="social-link" title="Twitter" aria-label="Twitter">𝕏</a>
+                            <a href="#" class="social-link" title="LinkedIn" aria-label="LinkedIn">in</a>
+                            <a href="#" class="social-link" title="GitHub" aria-label="GitHub">⌨</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ======================== 11. FOOTER ======================== -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <!-- Brand Column -->
+                <div class="footer-col footer-brand">
+                    <a href="/" class="footer-logo">
+                        <span class="gradient-text">ResumeAI</span>
+                    </a>
+                    <p class="footer-tagline">AI-powered resume analysis for modern professionals.</p>
+                    <div class="footer-socials">
+                        <a href="#" class="social-link" title="Twitter" aria-label="Twitter">𝕏</a>
+                        <a href="#" class="social-link" title="LinkedIn" aria-label="LinkedIn">in</a>
+                        <a href="#" class="social-link" title="GitHub" aria-label="GitHub">⌨</a>
+                    </div>
+                </div>
+
+                <!-- Product Column -->
+                <div class="footer-col">
+                    <h4 class="footer-heading">Product</h4>
+                    <ul class="footer-links">
+                        <li><a href="#features">Features</a></li>
+                        <li><a href="#pricing">Pricing</a></li>
+                        <li><a href="#">Resume Builder</a></li>
+                        <li><a href="#">Cover Letters</a></li>
+                        <li><a href="#">Career Roadmap</a></li>
+                    </ul>
+                </div>
+
+                <!-- Company Column -->
+                <div class="footer-col">
+                    <h4 class="footer-heading">Company</h4>
+                    <ul class="footer-links">
+                        <li><a href="#">About Us</a></li>
+                        <li><a href="#">Careers</a></li>
+                        <li><a href="#">Blog</a></li>
+                        <li><a href="#">Press</a></li>
+                        <li><a href="#">Partners</a></li>
+                    </ul>
+                </div>
+
+                <!-- Support Column -->
+                <div class="footer-col">
+                    <h4 class="footer-heading">Support</h4>
+                    <ul class="footer-links">
+                        <li><a href="#">Help Center</a></li>
+                        <li><a href="#">Documentation</a></li>
+                        <li><a href="#">API Reference</a></li>
+                        <li><a href="#">Status</a></li>
+                        <li><a href="#contact">Contact</a></li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="footer-bottom">
+                <p class="footer-copyright">&copy; 2024 ResumeAI. All rights reserved.</p>
+                <div class="footer-legal">
+                    <a href="#">Privacy Policy</a>
+                    <a href="#">Terms of Service</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+
+    <!-- ======================== 12. CHATBOT WIDGET ======================== -->
+    <button class="chatbot-toggle" id="chatbotToggle" title="AI Assistant" aria-label="Open AI Assistant">💬</button>
+
+    <div class="chatbot-panel" id="chatbotPanel">
+        <div class="chatbot-header">
+            <div>
+                <strong>AI Career Assistant</strong>
+                <small style="display:block;opacity:0.8">Online • Ready to help</small>
+            </div>
+            <button class="chatbot-close" id="chatbotClose" aria-label="Close chat">✕</button>
+        </div>
+        <div class="chatbot-messages" id="chatbotMessages">
+            <div class="chat-message bot">Hi! 👋 I'm your AI career assistant. Ask me anything about resumes, interviews, or career advice!</div>
+        </div>
+        <div class="chatbot-input">
+            <input type="text" id="chatbotInput" placeholder="Type your message..." aria-label="Chat message input">
+            <button id="chatbotSend" class="btn btn-primary">Send</button>
+        </div>
+    </div>
+
+    <!-- App JavaScript -->
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>
